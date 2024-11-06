@@ -5,21 +5,35 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { Label } from "@/components/ui/label";
 import {
-  Form,
   FormControl,
-  FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
 
-export default function LogIn() {
-  const [showPassword, setShowPassword] = useState(false);
-  const [currentSlide, setCurrentSlide] = useState(0);
+interface Slide {
+  title: string;
+  description: string;
+  image: string;
+}
 
-  const slides = [
+interface FormData {
+  email: string;
+  password: string;
+  remember: boolean;
+}
+
+interface FormErrors {
+  email?: string;
+  password?: string;
+}
+
+export default function LogIn(): JSX.Element {
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [currentSlide, setCurrentSlide] = useState<number>(0);
+
+  const slides: Slide[] = [
     {
       title: "Connect with every application.",
       description: "Everything you need in an easily customizable dashboard.",
@@ -46,16 +60,16 @@ export default function LogIn() {
     return () => clearInterval(timer);
   }, []);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     email: "",
     password: "",
     remember: false,
   });
 
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<FormErrors>({});
 
-  const validateForm = () => {
-    const newErrors = {};
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
 
     // Email validation
     if (!formData.email) {
@@ -75,21 +89,21 @@ export default function LogIn() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
     if (validateForm()) {
       console.log("Form submitted:", formData);
     }
   };
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
     // Clear error when user starts typing
-    if (errors[name]) {
+    if (errors[name as keyof FormErrors]) {
       setErrors((prev) => ({
         ...prev,
         [name]: "",
@@ -176,7 +190,7 @@ export default function LogIn() {
                   id="remember"
                   name="remember"
                   checked={formData.remember}
-                  onCheckedChange={(checked) =>
+                  onCheckedChange={(checked: boolean) =>
                     setFormData((prev) => ({ ...prev, remember: checked }))
                   }
                 />
@@ -237,7 +251,7 @@ export default function LogIn() {
           </form>
           <div className="text-center text-sm">
             Don't have an account?{" "}
-            <Button variant="link" className="px-0 text-primary">
+            <Button type="button" variant="link" className="px-0 text-primary">
               Create an account
             </Button>
           </div>
@@ -267,6 +281,7 @@ export default function LogIn() {
         <div className="absolute bottom-8 left-0 right-0 flex justify-center space-x-2">
           {slides.map((_, index) => (
             <button
+              type="button"
               key={index}
               className={`h-2 w-2 rounded-full transition-colors ${
                 currentSlide === index ? "bg-white" : "bg-white/50"
