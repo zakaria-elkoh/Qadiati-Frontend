@@ -1,0 +1,20 @@
+{
+  "header": {
+    "description": "مطور Full-Stack موهوب مع خبرة جيدة في إنشاء المواقع والتطبيقات."
+  },
+  "firstName": "زكريا",
+  "lastName": "الكوه",
+  "developer": "مطور",
+  "download": "تحميل",
+  "about me": "عني",
+  "about": "حول",
+  "projects": "المشاريع",
+  "my projects": "مشاريعي",
+  "experience": "الخبرة",
+  "my experience": "خبرتي",
+  "language": "اللغة",
+  "education": "التعليم",
+  "my education": "تعليمي",
+  "contact": "التواصل",
+  "my contact": "معلومات التواصل"
+}
