@@ -5,6 +5,8 @@ import PublicRoute from "@/layouts/PublicRoute";
 import Home from "@/pages/Home";
 import Profile from "@/pages/Profile";
 import LogIn from "@/pages/LogIn";
+import Chat from "@/pages/Chat";
+import Connect from "@/pages/Connect";
 
 const AppRouter = createBrowserRouter([
   {
@@ -17,6 +19,14 @@ const AppRouter = createBrowserRouter([
           {
             path: "/profile",
             element: <Profile />,
+          },
+          {
+            path: "/connect",
+            element: <Connect />,
+          },
+          {
+            path: "/chat",
+            element: <Chat />,
           },
         ],
       },

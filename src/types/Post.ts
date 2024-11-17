@@ -1,20 +1,23 @@
 export interface Post {
   id: string;
   author: {
+    id: string;
     name: string;
-    title: string;
-    avatar: string;
+    profilePictureUrl?: string;
+    jobTitle?: string;
   };
+  title?: string;
   content: string;
-  timePosted: string;
-  images: string[];
-  reactions: {
-    avatars: string[];
-    count: number;
-    mentionedUser: string;
-  };
-  stats: {
-    comments: number;
-    reposts: number;
-  };
+  image?: string;
+  likesCount: number;
+  commentsCount: number;
+  hashtags: string[];
+  privacyLevel: string;
+  allowComments: boolean;
+  isPinned: boolean;
+  isDeleted: boolean;
+  archived: boolean;
+  isDraft: boolean;
+  createdAt: Date;
+  originalPost?: string | null;
 }

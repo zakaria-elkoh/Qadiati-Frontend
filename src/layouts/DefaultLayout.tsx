@@ -4,7 +4,7 @@ import NavBar from "./NavBar";
 
 const DefaultLayout = () => {
   return (
-    <main className="bg-gray-200 min-h-screen dark:bg-black/80">
+    <main className="bg-gray-200 min-h-screen dark:bg-black/80 pt-14">
       {/* <Toaster
         position="bottom-right"
         closeButton
