@@ -12,6 +12,7 @@ import { Card } from "./ui/card";
 import { Post } from "@/types/Post";
 import PostCard from "./PostCard";
 import { formatDistanceToNowStrict } from "date-fns";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 
 interface PostCardProps {
   post: Post;
@@ -30,11 +31,13 @@ const RepostCard: FC<PostCardProps> = ({ post }) => {
       <div className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <img
-              src={post.author.profilePictureUrl}
-              alt={post.author.name}
-              className="w-14 h-14 rounded-full"
-            />
+            <Avatar className="w-12 h-12">
+              <AvatarImage  src={post.author.profilePictureUrl} />
+              <AvatarFallback>
+                {post.author.name.split(" ")[0][0] +
+                  post.author.name.split(" ")[1][0]}
+              </AvatarFallback>
+            </Avatar>
             <div>
               <h3 className="font-semibold">{post.author.name}</h3>
               <p className="text-sm text-gray-500">{post.author.jobTitle}</p>

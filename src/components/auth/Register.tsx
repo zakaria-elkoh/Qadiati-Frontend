@@ -1,3 +1,6 @@
+import * as z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import { useState } from "react";
 import { Eye, EyeOff, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,11 +16,10 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import * as z from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
 
 const formSchema = z.object({
+  firstName: z.string().min(2),
+  lastName: z.string().min(2),
   email: z.string().email({
     message: "Please enter a valid email address.",
   }),
@@ -29,13 +31,27 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export default function LogIn(): JSX.Element {
-  
+const Register = () => {
+  const [showPassword, setShowPassword] = useState<boolean>(false);
 
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      lastName: "",
+      firstName: "",
+      email: "",
+      password: "",
+      remember: false,
+    },
+  });
+
+  function onSubmit(data: FormValues) {
+    console.log(data);
+  }
   return (
     <Card className="w-full max-w-lg space-y-8 py-4 px-4 sm:px-8">
       <div className="space-y-2">
-        <Link
+        {/* <Link
           to="/"
           className="flex items-center gap-2 font-semibold mb-4 mt-2 w-fit"
         >
@@ -43,17 +59,47 @@ export default function LogIn(): JSX.Element {
             <Zap className="w-5 h-5" />
           </div>
           <span className="hidden sm:inline">Test</span>
-        </Link>
-        <h1 className="text-2xl font-bold tracking-tight">
-          Log in to your Account
-        </h1>
+        </Link> */}
+        <h1 className="text-2xl font-bold tracking-tight">Create an Account</h1>
         <p className="text-sm text-muted-foreground">
           Welcome back! Select method to log in:
         </p>
       </div>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
-          <div className="space-y-4">
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <FormField
+                  control={form.control}
+                  name="firstName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>First Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="First Name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="flex-1">
+                <FormField
+                  control={form.control}
+                  name="lastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Last Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Last Name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
             <FormField
               control={form.control}
               name="email"
@@ -202,4 +248,6 @@ export default function LogIn(): JSX.Element {
       </div>
     </Card>
   );
-}
+};
+
+export default Register;

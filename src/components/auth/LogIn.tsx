@@ -1,3 +1,6 @@
+import * as z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import { useState } from "react";
 import { Eye, EyeOff, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,9 +16,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import * as z from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
 
 const formSchema = z.object({
   email: z.string().email({
@@ -29,9 +29,21 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export default function LogIn(): JSX.Element {
-  
+const LogIn = () => {
+  const [showPassword, setShowPassword] = useState<boolean>(false);
 
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+      remember: false,
+    },
+  });
+
+  function onSubmit(data: FormValues) {
+    console.log(data);
+  }
   return (
     <Card className="w-full max-w-lg space-y-8 py-4 px-4 sm:px-8">
       <div className="space-y-2">
@@ -202,4 +214,6 @@ export default function LogIn(): JSX.Element {
       </div>
     </Card>
   );
-}
+};
+
+export default LogIn;

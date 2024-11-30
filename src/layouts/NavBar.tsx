@@ -28,8 +28,10 @@ const NavBar = () => {
   const navItems = [
     { href: "/", label: "Home" },
     { href: "/profile", label: "Profile" },
-    { href: "/login", label: "Login" },
+    { href: "/auth/login", label: "Login" },
+    { href: "/auth/register", label: "Register" },
     { href: "/connect", label: "Connect" },
+    { href: "/help", label: "Help" },
   ];
 
   return (

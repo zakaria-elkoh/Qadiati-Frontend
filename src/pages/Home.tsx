@@ -1,5 +1,7 @@
 // import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import AddPost from "@/components/AddPost";
 import PostList from "@/components/PostList";
+import { TagsInput } from "@/components/TagsInpust";
 import { fetchPosts } from "@/store/slices/postSlice";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -25,6 +27,7 @@ const Home = () => {
   return (
     <div>
       <h1>Home</h1>
+      <AddPost />
       <PostList posts={posts} />
     </div>
   );
