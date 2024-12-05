@@ -1,12 +1,13 @@
 import FriendsRequestsList from "@/components/FriendsRequestsList";
 import GrowList from "@/components/GrowList";
-import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UserPlus } from "lucide-react";
+import { RootState } from "@/store";
+import { useSelector } from "react-redux";
 
 const Connect = () => {
+  const authUser = useSelector((state: RootState) => state.auth.authUser);
+
   const networkItems = [
     { name: "Connections", count: 953 },
     { name: "Contacts", count: null },
@@ -22,7 +23,10 @@ const Connect = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="md:col-span-1 h-fit">
           <CardHeader>
-            <CardTitle>Manage my network</CardTitle>
+            <CardTitle>
+              Manage my network ||{" "}
+              {authUser?.family_name + " " + authUser?.given_name}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <ul className="space-y-2">

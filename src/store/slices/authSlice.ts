@@ -1,243 +1,110 @@
-// import api from "@/api/api";
-// import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+// src/store/slices/authSlice.ts
+import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
+import { signOut } from "aws-amplify/auth";
 
-// interface User {
-//   id: string;
-//   firstName: string;
-//   lastName: string;
-//   userName: string;
-//   email: string;
-//   role: string;
-//   twoStepVerification: boolean;
-// }
+// Define Types
+interface AuthUser {
+  email: string;
+  email_verified: boolean;
+  family_name?: string;
+  given_name?: string;
+  sub?: string;
+}
 
-// interface AuthState {
-//   user: User | null;
-//   token: string | null;
-//   loading: boolean;
-//   error: string | null;
-//   isOtpRequired: boolean;
-// }
+interface AuthState {
+  isAuthenticated: boolean;
+  authUser: AuthUser | null;
+  accessToken: string | null;
+  isLoading: boolean;
+  error: string | null;
+}
 
-// interface VerifyOTPData {
-//   userId: string;
-//   otp: string;
-// }
+// Initial State
+const initialState: AuthState = {
+  isAuthenticated: false,
+  authUser: null,
+  accessToken: null,
+  isLoading: true,
+  error: null,
+};
 
-// const initialState: AuthState = {
-//   user: null,
-//   token: localStorage.getItem("token"),
-//   loading: false,
-//   error: null,
-//   isOtpRequired: false,
-// };
+// Create Async Thunk for Logout
+export const logoutAsync = createAsyncThunk(
+  "auth/logout",
+  async (_, { rejectWithValue }) => {
+    try {
+      await signOut();
+      return true;
+    } catch (error) {
+      return rejectWithValue((error as Error).message);
+    }
+  }
+);
 
-// export const login = createAsyncThunk(
-//   "auth/login",
-//   async (
-//     { email, password }: { email: string; password: string },
-//     { rejectWithValue }
-//   ) => {
-//     try {
-//       const response = await api.post("/auth/login", { email, password });
-//       console.log("response", response.data.data.token);
+// Auth Slice
+const authSlice = createSlice({
+  name: "auth",
+  initialState,
+  reducers: {
+    setAuthUser: (state, action: PayloadAction<AuthUser>) => {
+      state.authUser = action.payload;
+      state.isAuthenticated = true;
+      state.isLoading = false;
+      state.error = null;
+    },
+    setAccessToken: (state, action: PayloadAction<string>) => {
+      state.accessToken = action.payload;
+    },
+    setLoading: (state, action: PayloadAction<boolean>) => {
+      state.isLoading = action.payload;
+    },
+    logout: (state) => {
+      state.isAuthenticated = false;
+      state.authUser = null;
+      state.accessToken = null;
+      state.isLoading = false;
+      state.error = null;
+      // Clear localStorage
+      localStorage.removeItem("reduxState");
+    },
+    clearError: (state) => {
+      state.error = null;
+    },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(logoutAsync.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(logoutAsync.fulfilled, (state) => {
+        state.isAuthenticated = false;
+        state.authUser = null;
+        state.accessToken = null;
+        state.isLoading = false;
+        state.error = null;
+        // Clear localStorage
+        localStorage.removeItem("reduxState");
+      })
+      .addCase(logoutAsync.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
+  },
+});
 
-//       return response.data;
-//     } catch (error) {
-//       return rejectWithValue(error.response.data);
-//     }
-//   }
-// );
+// Export actions
+export const { setAuthUser, setAccessToken, setLoading, logout, clearError } =
+  authSlice.actions;
 
-// export const signup = createAsyncThunk(
-//   "auth/signup",
-//   async (userData: Omit<User, "id">, { rejectWithValue }) => {
-//     try {
-//       const response = await api.post("/auth/signup", userData); // Bdelnaha hna
-//       console.log("response", response);
+// Export selectors
+export const selectAuth = (state: { auth: AuthState }) => state.auth;
+export const selectIsAuthenticated = (state: { auth: AuthState }) =>
+  state.auth.isAuthenticated;
+export const selectAuthUser = (state: { auth: AuthState }) =>
+  state.auth.authUser;
+export const selectIsLoading = (state: { auth: AuthState }) =>
+  state.auth.isLoading;
+export const selectError = (state: { auth: AuthState }) => state.auth.error;
 
-//       localStorage.setItem("token", response.data.data.token);
-//       return response.data;
-//     } catch (error) {
-//       return rejectWithValue(error.response.data);
-//     }
-//   }
-// );
-
-// export const logout = createAsyncThunk("auth/logout", async () => {
-//   localStorage.removeItem("token");
-// });
-
-// export const currentUser = createAsyncThunk(
-//   "auth/current-user",
-//   async (_, { rejectWithValue }) => {
-//     const token = localStorage.getItem("token");
-//     if (!token) {
-//       return rejectWithValue("No token found");
-//     }
-//     try {
-//       const response = await api.get("/auth/current-user");
-//       return response.data;
-//     } catch (error) {
-//       localStorage.removeItem("token");
-//       return rejectWithValue(error.response.data);
-//     }
-//   }
-// );
-
-// export const verifyOtp = createAsyncThunk(
-//   "auth/verifyOtp",
-//   async (verifyOTPData: VerifyOTPData, { rejectWithValue }) => {
-//     try {
-//       console.log("verifyOTPData", verifyOTPData);
-//       const response = await api.post(
-//         `/auth/verify-otp/${verifyOTPData.userId}`,
-//         { otp: verifyOTPData.otp }
-//       );
-//       return response.data;
-//     } catch (error) {
-//       return rejectWithValue(error.response.data);
-//     }
-//   }
-// );
-
-// export const toggleTwoStepVerification = createAsyncThunk(
-//   "user/twoStepVerification",
-//   async (twoStepVerification: boolean, { rejectWithValue }) => {
-//     try {
-//       console.log("verifyOTPData", twoStepVerification);
-//       const response = await api.post(`/auth/two-step-verification`, {
-//         twoStepVerification,
-//       });
-//       console.log("response", response.data);
-//       return response.data;
-//     } catch (error) {
-//       return rejectWithValue(error.response.data);
-//     }
-//   }
-// );
-
-// export const reSendOTP = createAsyncThunk(
-//   "user/reSendOTP",
-//   async (userId: string, { rejectWithValue }) => {
-//     try {
-//       console.log("userId userId", userId);
-//       const response = await api.get(`/auth//resend-otp/${userId}`);
-//       console.log("response", response.data);
-//       return response.data;
-//     } catch (error) {
-//       return rejectWithValue(error.response.data);
-//     }
-//   }
-// );
-
-// const authSlice = createSlice({
-//   name: "auth",
-//   initialState,
-//   reducers: {},
-//   extraReducers: (builder) => {
-//     builder
-//       .addCase(login.pending, (state) => {
-//         state.loading = true;
-//         state.error = null;
-//       })
-//       .addCase(
-//         login.fulfilled,
-//         (
-//           state,
-//           action: PayloadAction<{
-//             data: { user: User; token: string; twoStepVerification: boolean };
-//           }>
-//         ) => {
-//           state.loading = false;
-//           console.log("action.payload,login.fulfilled", action.payload);
-//           if (action.payload.data.user.twoStepVerification) {
-//             state.isOtpRequired = true;
-//             state.user = action.payload.data.user;
-//           } else {
-//             localStorage.setItem("token", action.payload.data.token);
-//             state.user = action.payload.data.user;
-//             state.token = action.payload.data.token;
-//           }
-//         }
-//       )
-//       .addCase(login.rejected, (state, action) => {
-//         state.loading = false;
-//         state.error = action.payload as string;
-//       })
-//       .addCase(signup.pending, (state) => {
-//         state.loading = true;
-//         state.error = null;
-//       })
-//       .addCase(
-//         signup.fulfilled,
-//         (
-//           state,
-//           action: PayloadAction<{ data: { user: User; token: string } }>
-//         ) => {
-//           state.loading = false;
-//           state.user = action.payload.data.user;
-//           state.token = action.payload.data.token;
-//         }
-//       )
-//       .addCase(signup.rejected, (state, action) => {
-//         state.loading = false;
-//         state.error = action.payload as string;
-//       })
-//       .addCase(logout.fulfilled, (state) => {
-//         state.user = null;
-//         state.token = null;
-//       })
-//       .addCase(currentUser.pending, (state) => {
-//         state.loading = true;
-//       })
-//       .addCase(currentUser.fulfilled, (state, action) => {
-//         state.loading = false;
-//         state.user = action.payload.user;
-//       })
-//       .addCase(currentUser.rejected, (state, action) => {
-//         state.loading = false;
-//         state.error = action.payload;
-//         state.user = null;
-//         state.token = null;
-//         localStorage.removeItem("token");
-//       })
-//       .addCase(verifyOtp.pending, (state) => {
-//         state.loading = true;
-//         state.error = null;
-//       })
-//       .addCase(verifyOtp.fulfilled, (state, action) => {
-//         console.log("action.payload,verifyOtp.fulfilled", action.payload);
-//         state.loading = false;
-//         state.isOtpRequired = false;
-//         state.user = action.payload.data.user;
-//         state.token = action.payload.data.token;
-//         localStorage.setItem("token", action.payload.data.token);
-//       })
-//       .addCase(verifyOtp.rejected, (state, action) => {
-//         console.log("action.payload", action.payload);
-//         state.loading = false;
-//         state.error = action.payload as string;
-//       })
-//       .addCase(toggleTwoStepVerification.pending, (state) => {
-//         state.loading = true;
-//         state.error = null;
-//       })
-//       .addCase(toggleTwoStepVerification.fulfilled, (state, action) => {
-//         console.log(
-//           "action.payload,verifyOtp.toggleTwoStepVerification",
-//           action.payload
-//         );
-//         state.loading = false;
-//         state.user.twoStepVerification =
-//           action.payload.data.twoStepVerification;
-//         toast.success("Two-step verification toggled successfully");
-//       })
-//       .addCase(reSendOTP.fulfilled, (state, action) => {
-//         console.log("action.payload,reSendOTP.reSendOTP", action.payload);
-//         toast.success(action.payload.message);
-//       });
-//   },
-// });
-
-// export default authSlice.reducer;
+export default authSlice.reducer;

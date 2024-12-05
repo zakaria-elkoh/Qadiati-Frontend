@@ -1,13 +1,11 @@
 import * as z from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
 import { useState } from "react";
 import { Eye, EyeOff, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Form,
   FormControl,
@@ -16,13 +14,24 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { toast } from "sonner";
+import {
+  signIn,
+  signInWithRedirect,
+  getCurrentUser,
+  fetchUserAttributes,
+} from "aws-amplify/auth";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { useDispatch } from "react-redux";
+import { setAuthUser } from "@/store/slices/authSlice";
 
 const formSchema = z.object({
   email: z.string().email({
     message: "Please enter a valid email address.",
   }),
-  password: z.string().min(6, {
-    message: "Password must be at least 6 characters.",
+  password: z.string().min(8, {
+    message: "Password must be at least 8 characters.",
   }),
   remember: z.boolean().default(false),
 });
@@ -30,20 +39,82 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 const LogIn = () => {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: "",
-      password: "",
+      email: "zakaria.elkoh10@gmail.com",
+      password: "Pa$$w0rd!",
       remember: false,
     },
   });
 
-  function onSubmit(data: FormValues) {
-    console.log(data);
+  async function onSubmit(data: FormValues) {
+    setIsLoading(true);
+    try {
+      const signInRes = await signIn({
+        username: data.email,
+        password: data.password,
+      });
+
+      console.log("res", signInRes);
+
+      if (signInRes.isSignedIn) {
+        const currentUser = await getCurrentUser();
+        const userAttributes = await fetchUserAttributes();
+        console.log(
+          "Current user: ",
+          currentUser,
+          "user data: ",
+          userAttributes
+        );
+        if (userAttributes) {
+          dispatch(setAuthUser(userAttributes));
+          navigate("/profile");
+        }
+
+        //   if (data.remember) {
+        //     localStorage.setItem("rememberedEmail", data.email);
+        //   }
+
+        //   toast.success("Successfully logged in!");
+        // } else {
+        //   console.log("Additional step required:", nextStep);
+      }
+    } catch (error: any) {
+      console.error("Error signing in:", error);
+      toast.error(error.message || "Failed to sign in");
+    } finally {
+      setIsLoading(false);
+    }
   }
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await signInWithRedirect({
+        provider: "Google",
+      });
+    } catch (error: any) {
+      console.error("Google sign-in error:", error);
+      toast.error(error.message || "Failed to sign in with Google");
+    }
+  };
+
+  const handleFacebookSignIn = async () => {
+    try {
+      await signInWithRedirect({
+        provider: "Facebook",
+      });
+    } catch (error: any) {
+      console.error("Facebook sign-in error:", error);
+      toast.error(error.message || "Failed to sign in with Facebook");
+    }
+  };
+
   return (
     <Card className="w-full max-w-lg space-y-8 py-4 px-4 sm:px-8">
       <div className="space-y-2">
@@ -130,12 +201,17 @@ const LogIn = () => {
                 </FormItem>
               )}
             />
-            <Button type="button" variant="link" className="px-0 text-primary">
+            <Button
+              type="button"
+              variant="link"
+              className="px-0 text-primary"
+              onClick={() => navigate("/forgot-password")}
+            >
               Forgot Password?
             </Button>
           </div>
-          <Button type="submit" className="w-full">
-            Log in
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? "Logging in..." : "Log in"}
           </Button>
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
@@ -148,7 +224,12 @@ const LogIn = () => {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button type="button" variant="outline" className="relative flex-1">
+            <Button
+              type="button"
+              variant="outline"
+              className="relative flex-1"
+              onClick={handleGoogleSignIn}
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 enableBackground="new 0 0 24 24"
@@ -171,22 +252,15 @@ const LogIn = () => {
                   fill="#EA4335"
                   d="M12.237,4.752c1.711-0.028,3.363,0.617,4.602,1.799l3.427-3.424C18.094,1.087,15.217-0.033,12.237,0c-4.535,0-8.683,2.56-10.72,6.611l3.984,3.093C6.451,6.861,9.109,4.752,12.237,4.752L12.237,4.752z"
                 ></path>
-                <path
-                  fill="#2D9248"
-                  d="M5.502,14.297L5.502,14.297l-3.984,3.092l0,0C3.518,21.373,7.558,23.91,12,23.997v-4.753C8.975,19.141,6.427,17.067,5.502,14.297L5.502,14.297z"
-                ></path>
-                <path
-                  fill="#DBA403"
-                  d="M1.518,6.612L1.518,6.612c-1.704,3.391-1.704,7.387,0,10.778l0,0l3.984-3.092C5,12.809,5,11.192,5.502,9.704l0,0L1.518,6.612L1.518,6.612z"
-                ></path>
-                <path
-                  fill="#CC3A2E"
-                  d="M12,0.003C7.558,0.09,3.518,2.631,1.518,6.612l0,0l3.984,3.093C6.427,6.933,8.975,4.86,12,4.756V0.003L12,0.003z"
-                ></path>
               </svg>
               Google
             </Button>
-            <Button type="button" variant="outline" className="relative flex-1">
+            <Button
+              type="button"
+              variant="outline"
+              className="relative flex-1"
+              onClick={handleFacebookSignIn}
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 1020 1020"

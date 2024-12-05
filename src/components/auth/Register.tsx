@@ -2,12 +2,11 @@ import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useState } from "react";
-import { Eye, EyeOff, Zap } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Form,
   FormControl,
@@ -16,23 +15,35 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { signUp, confirmSignUp, signIn } from "aws-amplify/auth";
 
 const formSchema = z.object({
-  firstName: z.string().min(2),
-  lastName: z.string().min(2),
+  firstName: z.string().min(2, {
+    message: "First name must be at least 2 characters.",
+  }),
+  lastName: z.string().min(2, {
+    message: "Last name must be at least 2 characters.",
+  }),
   email: z.string().email({
     message: "Please enter a valid email address.",
   }),
-  password: z.string().min(6, {
-    message: "Password must be at least 6 characters.",
+  password: z.string().min(8, {
+    message: "Password must be at least 8 characters.",
   }),
-  remember: z.boolean().default(false),
+  verificationCode: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
 const Register = () => {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
+  const [showVerification, setShowVerification] = useState<boolean>(false);
+  const [verificationCode, setVerificationCode] = useState<string>("");
+  const [registeredEmail, setRegisteredEmail] = useState<string>("");
+  const [registeredPassword, setRegisteredPassword] = useState<string>("");
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -41,210 +52,232 @@ const Register = () => {
       firstName: "",
       email: "",
       password: "",
-      remember: false,
     },
   });
 
-  function onSubmit(data: FormValues) {
-    console.log(data);
+  const handleVerification = async (data: FormValues) => {
+    try {
+      setLoading(true);
+      setError("");
+
+      // First, confirm the signup
+      await confirmSignUp({
+        username: registeredEmail,
+        confirmationCode: data.verificationCode || "",
+      });
+
+      // Then attempt to sign in
+      const signInResult = await signIn({
+        username: registeredEmail,
+        password: registeredPassword,
+      });
+
+      if (signInResult.isSignedIn) {
+        // Successfully signed in, navigate to home
+        navigate("/");
+      } else {
+        // Handle any additional steps if needed
+        console.log("Additional steps required:", signInResult.nextStep);
+        setError(
+          "Sign in failed after verification. Please try logging in manually."
+        );
+      }
+    } catch (err: any) {
+      setError(err.message || "Verification failed");
+      console.error("Verification error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  async function onSubmit(data: FormValues) {
+    try {
+      setLoading(true);
+      setError("");
+
+      const { isSignUpComplete, userId, nextStep } = await signUp({
+        username: data.email,
+        password: data.password,
+        options: {
+          userAttributes: {
+            email: data.email,
+            given_name: data.firstName,
+            family_name: data.lastName,
+          },
+          autoSignIn: true,
+        },
+      });
+
+      if (!isSignUpComplete) {
+        setRegisteredEmail(data.email);
+        setRegisteredPassword(data.password); // Store password for auto sign-in
+        setShowVerification(true);
+      }
+
+      console.log("Sign up successful. User ID:", userId);
+      console.log("Next step:", nextStep);
+    } catch (err: any) {
+      setError(err.message || "Registration failed");
+    } finally {
+      setLoading(false);
+    }
   }
-  return (
-    <Card className="w-full max-w-lg space-y-8 py-4 px-4 sm:px-8">
-      <div className="space-y-2">
-        {/* <Link
-          to="/"
-          className="flex items-center gap-2 font-semibold mb-4 mt-2 w-fit"
-        >
-          <div className="w-8 h-8 bg-primary/10 text-primary rounded-lg flex items-center justify-center">
-            <Zap className="w-5 h-5" />
+
+  if (showVerification) {
+    return (
+      <Card className="w-full max-w-lg space-y-8 p-8">
+        <div className="space-y-2">
+          <h1 className="text-2xl font-bold">Verify your Email</h1>
+          <p className="text-sm text-muted-foreground">
+            We've sent a verification code to {registeredEmail}
+          </p>
+        </div>
+
+        {error && (
+          <div className="text-sm text-red-500 bg-red-50 p-2 rounded">
+            {error}
           </div>
-          <span className="hidden sm:inline">Test</span>
-        </Link> */}
-        <h1 className="text-2xl font-bold tracking-tight">Create an Account</h1>
-        <p className="text-sm text-muted-foreground">
-          Welcome back! Select method to log in:
-        </p>
-      </div>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
-          <div className="space-y-3">
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <FormField
-                  control={form.control}
-                  name="firstName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>First Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="First Name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <div className="flex-1">
-                <FormField
-                  control={form.control}
-                  name="lastName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Last Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Last Name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
+        )}
+
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(handleVerification)}
+            className="space-y-4"
+          >
             <FormField
               control={form.control}
-              name="email"
+              name="verificationCode"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>Verification Code</FormLabel>
                   <FormControl>
-                    <Input placeholder="Email" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Input
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Password"
-                        {...field}
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <FormField
-              control={form.control}
-              name="remember"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
+                    <Input
+                      type="text"
+                      placeholder="Enter verification code"
+                      {...field}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        setVerificationCode(e.target.value);
+                      }}
                     />
                   </FormControl>
-                  <FormLabel className="text-sm font-medium leading-none">
-                    Remember me
-                  </FormLabel>
+                  <FormMessage />
                 </FormItem>
               )}
             />
-            <Button type="button" variant="link" className="px-0 text-primary">
-              Forgot Password?
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Verifying..." : "Verify Email"}
             </Button>
+          </form>
+        </Form>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="w-full max-w-lg space-y-8 p-8">
+      <div className="space-y-2">
+        <h1 className="text-2xl font-bold">Create an Account</h1>
+        <p className="text-sm text-muted-foreground">
+          Please fill in your details to register
+        </p>
+      </div>
+
+      {error && (
+        <div className="text-sm text-red-500 bg-red-50 p-2 rounded">
+          {error}
+        </div>
+      )}
+
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="firstName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>First Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="First Name" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="lastName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Last Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Last Name" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
-          <Button type="submit" className="w-full">
-            Log in
+
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                  <Input placeholder="Email" type="email" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Password</FormLabel>
+                <FormControl>
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Password"
+                      {...field}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "Creating Account..." : "Create Account"}
           </Button>
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                or continue with email
-              </span>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button type="button" variant="outline" className="relative flex-1">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                enableBackground="new 0 0 24 24"
-                viewBox="0 0 24 24"
-                id="google"
-              >
-                <path
-                  fill="#4285F4"
-                  d="M23.761,12.273c0-0.819-0.067-1.635-0.207-2.441H12.237v4.621h6.48c-0.269,1.491-1.133,2.809-2.396,3.646V21.1h3.868C22.455,19.015,23.761,15.925,23.761,12.273z"
-                ></path>
-                <path
-                  fill="#34A853"
-                  d="M12.237,24c3.238,0,5.966-1.062,7.953-2.897l-3.868-3.001c-1.078,0.731-2.463,1.148-4.085,1.148c-3.129,0-5.786-2.109-6.735-4.952H1.518v3.092C3.554,21.443,7.702,24,12.237,24L12.237,24z"
-                ></path>
-                <path
-                  fill="#FBBC04"
-                  d="M5.502,14.297C5,12.809,5,11.192,5.502,9.704V6.612H1.518c-1.704,3.391-1.704,7.387,0,10.778L5.502,14.297L5.502,14.297z"
-                ></path>
-                <path
-                  fill="#EA4335"
-                  d="M12.237,4.752c1.711-0.028,3.363,0.617,4.602,1.799l3.427-3.424C18.094,1.087,15.217-0.033,12.237,0c-4.535,0-8.683,2.56-10.72,6.611l3.984,3.093C6.451,6.861,9.109,4.752,12.237,4.752L12.237,4.752z"
-                ></path>
-                <path
-                  fill="#2D9248"
-                  d="M5.502,14.297L5.502,14.297l-3.984,3.092l0,0C3.518,21.373,7.558,23.91,12,23.997v-4.753C8.975,19.141,6.427,17.067,5.502,14.297L5.502,14.297z"
-                ></path>
-                <path
-                  fill="#DBA403"
-                  d="M1.518,6.612L1.518,6.612c-1.704,3.391-1.704,7.387,0,10.778l0,0l3.984-3.092C5,12.809,5,11.192,5.502,9.704l0,0L1.518,6.612L1.518,6.612z"
-                ></path>
-                <path
-                  fill="#CC3A2E"
-                  d="M12,0.003C7.558,0.09,3.518,2.631,1.518,6.612l0,0l3.984,3.093C6.427,6.933,8.975,4.86,12,4.756V0.003L12,0.003z"
-                ></path>
-              </svg>
-              Google
-            </Button>
-            <Button type="button" variant="outline" className="relative flex-1">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 1020 1020"
-                id="facebook"
-              >
-                <path
-                  fill="#1877f2"
-                  d="M1024,512C1024,229.23016,794.76978,0,512,0S0,229.23016,0,512c0,255.554,187.231,467.37012,432,505.77777V660H302V512H432V399.2C432,270.87982,508.43854,200,625.38922,200,681.40765,200,740,210,740,210V336H675.43713C611.83508,336,592,375.46667,592,415.95728V512H734L711.3,660H592v357.77777C836.769,979.37012,1024,767.554,1024,512Z"
-                ></path>
-                <path
-                  fill="#fff"
-                  d="M711.3,660,734,512H592V415.95728C592,375.46667,611.83508,336,675.43713,336H740V210s-58.59235-10-114.61078-10C508.43854,200,432,270.87982,432,399.2V512H302V660H432v357.77777a517.39619,517.39619,0,0,0,160,0V660Z"
-                ></path>
-              </svg>
-              Facebook
-            </Button>
-          </div>
         </form>
       </Form>
+
       <div className="text-center text-sm">
-        Don't have an account?{" "}
-        <Button type="button" variant="link" className="px-0 text-primary">
-          Create an account
-        </Button>
+        Already have an account?{" "}
+        <Link to="/login" className="text-primary hover:underline">
+          Log in
+        </Link>
       </div>
     </Card>
   );

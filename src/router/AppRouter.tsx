@@ -68,10 +68,10 @@ const AppRouter = createBrowserRouter([
       },
     ],
   },
-  {
-    path: "*",
-    element: <Navigate to="/" replace />,
-  },
+  // {
+  //   path: "*",
+  //   element: <Navigate to="/" replace />,
+  // },
 ]);
 
 export default AppRouter;

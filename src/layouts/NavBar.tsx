@@ -13,13 +13,24 @@ import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import SelectLanguage from "@/components/SelectLanguage";
 import { ModeToggle } from "@/components/mode-toggle";
-import { Link, useLocation } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { OpenNotificationButtonSmall } from "@/components/OpenNotificationButtonSmall";
 import NotificationDropDown from "@/components/NotificationDropDown";
+import { signOut } from "aws-amplify/auth";
+import { useDispatch } from "react-redux";
+import { logout } from "@/store/slices/authSlice";
 
 const NavBar = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const handleLogout = async () => {
-    // await dispatch(logout());
+    try {
+      await signOut();
+      dispatch(logout());
+      navigate("/auth/login");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
   };
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -118,7 +129,9 @@ const NavBar = () => {
               <DropdownMenuItem>Settings</DropdownMenuItem>
               <DropdownMenuItem>Billing</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Log out</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout}>
+                Log out
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 

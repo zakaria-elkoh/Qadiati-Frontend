@@ -1,13 +1,18 @@
-import { useState } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 
 const PublicRoute = () => {
-  // const [shouldRedirect, setShouldRedirect] = useState(false);
+  // Check if user is authenticated
+  const isAuthenticated =
+    localStorage.getItem(
+      "CognitoIdentityServiceProvider.2p5th55hlvccno1r8bd5ds53g0.LastAuthUser"
+    ) !== null;
 
-  // if (shouldRedirect) {
-  //   return <Navigate to="/" replace />;
-  // }
+  // If authenticated, redirect to dashboard/home
+  if (isAuthenticated) {
+    return <Navigate to="/profile" replace />;
+  }
 
+  // If not authenticated, render the public route
   return <Outlet />;
 };
 

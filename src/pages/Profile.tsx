@@ -6,8 +6,23 @@ import ProfileImage from "@/components/profile/ProfileImage";
 import Edication from "@/components/Education";
 import Experience from "@/components/Experience";
 import VerifiedIcon from "@/components/ui/VerifiedIcon";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store";
+import { selectAuth } from "@/store/slices/authSlice";
 
 const Profile = () => {
+  const authUser = useSelector((state: RootState) => state.auth.authUser);
+  const { isAuthenticated, isLoading } = useSelector(selectAuth);
+
+  console.log("is auth: ", isAuthenticated, "| | isLoading: ", isLoading);
+
+  if (!authUser) {
+    return <div>Loading...</div>;
+  }
+  console.log("user", authUser);
+
+  const { email, family_name, given_name } = authUser;
+
   return (
     <div className="my-8 max-w-7xl mx-auto flex flex-col gap-6">
       <Card className="relative overflow-hidden">
@@ -18,7 +33,7 @@ const Profile = () => {
             <div>
               <div className="flex gap-2 items-center">
                 <h2 className="text-2xl font-bold leadi">
-                  Murphy Rodriguez
+                  {given_name + " " + family_name}
                 </h2>
                 <div className="relative top-0.5">
                   <VerifiedIcon w={6} h={6} />
@@ -52,7 +67,7 @@ const Profile = () => {
                 </div>
                 <div className="flex items-center">
                   <Mail className="w-4 h-4 mr-2" />
-                  <span>zakaria.elkoh10@gmail.com</span>
+                  <span>{email}</span>
                 </div>
                 <div className="flex items-center">
                   <Globe className="w-4 h-4 mr-2" />
